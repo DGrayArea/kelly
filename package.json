@@ -1,0 +1,25 @@
+{
+  "name": "kelly",
+  "version": "0.1.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "tsx src/kelly.test.ts",
+    "book": "tsx src/readBook.ts",
+    "agent": "tsx src/agent.ts",
+    "replay": "tsx src/replay.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "Autonomous trading agent for Kuru (CLOB-AMM) on Monad. Kelly-sized, survival-first.",
+  "dependencies": {
+    "@kuru-labs/kuru-sdk": "^0.0.95",
+    "dotenv": "^17.4.2",
+    "ethers": "^5.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2"
+  }
+}

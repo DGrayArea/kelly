@@ -54,21 +54,102 @@ function tradePriceToNum(v: BigNumber): number {
   return Number(ethers.utils.formatUnits(v, TRADE_PRICE_DECIMALS));
 }
 
+/**
+ * Auto-reconnecting market feed.
+ *
+ * A long run cannot trust a single WebSocket. Two distinct failure modes, both
+ * observed in practice:
+ *   1. the socket emits 'close' and stops           -> reconnect on the event
+ *   2. the socket stays "open" but silently stops
+ *      delivering messages                          -> only a staleness
+ *                                                      watchdog catches this
+ * An 8h recording died 29 minutes in because the close was logged and never
+ * acted on, losing 94% of the run. Both paths now force a rebuild.
+ */
 export class MarketFeed {
-  private provider: ethers.providers.WebSocketProvider;
-  private contract: ethers.Contract;
+  private provider!: ethers.providers.WebSocketProvider;
+  private contract!: ethers.Contract;
+  private orderCb?: (e: DecodedOrder) => void;
+  private tradeCb?: (e: DecodedTrade) => void;
+  private statusCb?: (s: string) => void;
+  private lastEventAt = Date.now();
+  private reconnects = 0;
+  private closed = false;
+  private watchdog?: NodeJS.Timeout;
+
+  /** Force a reconnect if nothing arrives for this long. */
+  private readonly stalenessMs = 5 * 60_000;
 
   constructor(
-    wsUrl: string,
+    private wsUrl: string,
     private marketAddress: string,
     private mp: MarketParams
   ) {
-    this.provider = new ethers.providers.WebSocketProvider(wsUrl);
+    this.connect();
+    this.watchdog = setInterval(() => this.checkStale(), 60_000);
+  }
+
+  private connect() {
+    this.provider = new ethers.providers.WebSocketProvider(this.wsUrl);
     this.contract = new ethers.Contract(
-      marketAddress,
+      this.marketAddress,
       (OrderBookAbi as any).abi,
       this.provider
     );
+    this.attach();
+    this.bindSocket();
+  }
+
+  /** Re-register whichever handlers the caller asked for. */
+  private attach() {
+    if (this.orderCb) this.bindOrder(this.orderCb);
+    if (this.tradeCb) this.bindTrade(this.tradeCb);
+  }
+
+  private bindSocket() {
+    const ws: any = (this.provider as any)._websocket;
+    if (!ws) return;
+    ws.on?.("close", () => this.recover("websocket closed"));
+    ws.on?.("error", (e: any) =>
+      this.recover("websocket error: " + (e?.message || e))
+    );
+  }
+
+  private checkStale() {
+    if (this.closed) return;
+    const idle = Date.now() - this.lastEventAt;
+    if (idle > this.stalenessMs) {
+      this.recover(`no events for ${(idle / 60000).toFixed(1)}m (silent stall)`);
+    }
+  }
+
+  private async recover(reason: string) {
+    if (this.closed) return;
+    this.reconnects++;
+    const wait = Math.min(1000 * 2 ** Math.min(this.reconnects, 5), 30_000);
+    this.statusCb?.(`${reason} -> reconnecting in ${wait / 1000}s (#${this.reconnects})`);
+
+    try {
+      this.contract?.removeAllListeners();
+      await this.provider?.destroy();
+    } catch {
+      /* already gone */
+    }
+
+    setTimeout(() => {
+      if (this.closed) return;
+      try {
+        this.connect();
+        this.lastEventAt = Date.now(); // grace period after rebuild
+        this.statusCb?.(`reconnected (#${this.reconnects})`);
+      } catch (e: any) {
+        this.recover("reconnect failed: " + (e?.message || e));
+      }
+    }, wait);
+  }
+
+  get reconnectCount() {
+    return this.reconnects;
   }
 
   /**
@@ -78,7 +159,13 @@ export class MarketFeed {
    * immune to that and to future ABI reordering.
    */
   onOrder(cb: (e: DecodedOrder) => void) {
+    this.orderCb = cb;
+    this.bindOrder(cb);
+  }
+
+  private bindOrder(cb: (e: DecodedOrder) => void) {
     this.contract.on("OrderCreated", (...args: any[]) => {
+      this.lastEventAt = Date.now();
       const a = args[args.length - 1]?.args;
       if (!a) return;
       cb({
@@ -94,7 +181,13 @@ export class MarketFeed {
   }
 
   onTrade(cb: (e: DecodedTrade) => void) {
+    this.tradeCb = cb;
+    this.bindTrade(cb);
+  }
+
+  private bindTrade(cb: (e: DecodedTrade) => void) {
     this.contract.on("Trade", (...args: any[]) => {
+      this.lastEventAt = Date.now();
       const a = args[args.length - 1]?.args;
       if (!a) return;
       cb({
@@ -112,14 +205,17 @@ export class MarketFeed {
   }
 
   onStatus(cb: (s: string) => void) {
-    const ws: any = (this.provider as any)._websocket;
-    if (!ws) return;
-    ws.on?.("close", () => cb("websocket closed"));
-    ws.on?.("error", (e: any) => cb("websocket error: " + (e?.message || e)));
+    this.statusCb = cb;
   }
 
   async close() {
-    this.contract.removeAllListeners();
-    await this.provider.destroy();
+    this.closed = true;
+    if (this.watchdog) clearInterval(this.watchdog);
+    try {
+      this.contract?.removeAllListeners();
+      await this.provider?.destroy();
+    } catch {
+      /* already gone */
+    }
   }
 }

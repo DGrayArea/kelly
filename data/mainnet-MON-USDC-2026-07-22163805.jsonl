@@ -515,3 +515,9 @@
 {"kind":"order","ts":1784738442688,"orderId":"72982877","owner":"0x2b46C08Ca648e2334A1182D31228A79e2BEC1669","price":0.023623,"size":21156,"isBuy":true}
 {"kind":"order","ts":1784738442689,"orderId":"72982878","owner":"0x2b46C08Ca648e2334A1182D31228A79e2BEC1669","price":0.023638,"size":21156,"isBuy":false}
 {"kind":"trade","ts":1784738444289,"orderId":"72982874","isBuy":true,"price":0.023632,"updatedSize":21044.528605281,"filledSize":105.471394719,"taker":"0x2f84FB8982073f39Ba47c7fcC29119aF074AbbcB","maker":"0x8Cf67893C236963233023B56AC56A185B042866F"}
+{"kind":"order","ts":1784738444842,"orderId":"72982879","owner":"0x2b46C08Ca648e2334A1182D31228A79e2BEC1669","price":0.023629,"size":42311,"isBuy":true}
+{"kind":"order","ts":1784738444844,"orderId":"72982880","owner":"0x2b46C08Ca648e2334A1182D31228A79e2BEC1669","price":0.023632,"size":42311,"isBuy":false}
+{"kind":"order","ts":1784738446329,"orderId":"72982881","owner":"0x8Cf67893C236963233023B56AC56A185B042866F","price":0.023622,"size":21150,"isBuy":true}
+{"kind":"order","ts":1784738446330,"orderId":"72982882","owner":"0x8Cf67893C236963233023B56AC56A185B042866F","price":0.02363,"size":21150,"isBuy":false}
+{"kind":"order","ts":1784738446793,"orderId":"72982883","owner":"0x2b46C08Ca648e2334A1182D31228A79e2BEC1669","price":0.023629,"size":42311,"isBuy":true}
+{"kind":"order","ts":1784738446793,"orderId":"72982884","owner":"0x2b46C08Ca648e2334A1182D31228A79e2BEC1669","price":0.023632,"size":42311,"isBuy":false}

@@ -71,6 +71,34 @@ poisoning every downstream signal. Verified against the live L2 mid.
 
 ---
 
+## FINAL VERDICT (31h / 7,554 trades)
+
+After a full multi-session recording across a day/night cycle, the question is
+settled and it is quantitative, not hand-wavy:
+
+**The flow signal is genuinely predictive, and it is exactly half as large as it
+needs to be.**
+
+- Trade-flow imbalance predicts 120s direction at a **56.3% hit rate** over 4,818
+  clear-imbalance samples. That is a real, statistically meaningful edge, not noise.
+- Converted to money, that edge is worth **~5.9 bps per trade**.
+- The cheapest possible round-trip cost, betting the entire $25 bankroll at once,
+  is **12.5 bps** (2.5 bps gas + 10 bps spread).
+- So even in the best case the edge covers **47% of cost**. At Kelly-sized $1
+  positions it covers **8%**.
+
+Every strategy lost money at every hold period (60s–600s) once real costs were
+applied. The signal is not the problem; the bankroll-to-cost ratio is. On $25,
+fixed gas makes a real 56% edge unprofitable.
+
+**Conclusion for the Arena: with a $25 prefunded bankroll and these costs, there is
+no viable active trading strategy on this market.** The correct play is extreme
+selectivity — trade rarely, large, on the strongest imbalance, and let opponents
+who overtrade bleed 12–25% of their stack to gas. Winning is about spending less,
+not predicting better.
+
+---
+
 ## The finding that broke the thesis
 
 The project was designed around fractional Kelly: bet small, survive, grind out a
